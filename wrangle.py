@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import pycountry_convert as pc
+from sklearn.model_selection import train_test_split
+
 
 def fix_edu(jobs1):
     jobs1.required_education = np.where(jobs1.required_education.isna(), 'None', jobs1.required_education)
@@ -35,4 +37,16 @@ def wrangle_jobs():
     jobs = jobs.dropna()
     jobs['continent'] = [pc.country_alpha2_to_continent_code(loc) for loc in jobs.location.str[:2]]
     jobs.drop(columns='location', inplace=True)
+    dummies = pd.get_dummies(jobs[['employment_type', 'required_experience', 'required_education', 'continent']])
+    jobs = pd.concat([jobs, dummies], axis=1)
     return jobs
+
+def split_data(df, target):
+    '''
+    This function takes in a dataframe and splits it into three dataframes.
+    It returns these dataframes in this order: train, validate, test.
+    Train makes up 56% of the total observations, validate 24%, and test 20%.
+    '''
+    train, test = train_test_split(df, test_size=0.2, random_state=123, stratify=df[target])
+    train, validate = train_test_split(train, test_size=0.3, random_state=123, stratify=train[target])
+    return train, validate, test
